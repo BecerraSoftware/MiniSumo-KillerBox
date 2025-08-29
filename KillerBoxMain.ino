@@ -1,37 +1,60 @@
-int s1 = 0; // sensor 1
-int s2 = 0; // sensor 1
-/*
-int f1=0;
-int f2=0;
-int f3=0;
-*/
-int sen1 = 2;
-int sen2 = 5;
+ 
+
+
+#define sensorDerecha 5
+#define sensorIzquierda 1
+#define sensorFrente 2
+
+
+#define SPisoDerecha 4
+#define SPisoIzquierda 3
+
+//pines motores 
+#define motorIzquierdaA1 6
+#define motorIzquierdaA2 7
+#define pwdA 5
+
+#define motorDerechaB1 9
+#define motorDerechaB2 8
+#define pwdB 10
+
+
+
 
 
 
 
 void setup() {
  
-  pinMode(13, OUTPUT);
-  pinMode(12, OUTPUT);
+  pinMode(sensorDerecha, INPUT);
+  pinMode(sensorIzquierda, INPUT);
+  pinMode(sensorFrente, INPUT);
+  pinMode(SPisoDerecha, INPUT);
+  pinMode(SPisoIzquierda, INPUT);
 
-  pinMode(5,OUTPUT);//pwma motorderecha
-  pinMode(6,OUTPUT);
-  pinMode(7,OUTPUT);
-  
-  pinMode(8,OUTPUT);
-  pinMode(9,OUTPUT);
-  pinMode(10,OUTPUT);//pwmb motorIzquierda
+  //Motores
+  pinMode(MotorIzquierdaA1, OUTPUT);
+  pinMode(MotorIzquierdaA2, OUTPUT);
+  pinMode(pwdA, OUTPUT);
 
- // pinMode(15,INPUT);
- // pinMode(18,INPUT);
- // pinMode(20,INPUT);//A7
+  pinMode(MotorDerechaA1, OUTPUT);
+  pinMode(MotorDerechaA2, OUTPUT);
+  pinMode(pwdB, OUTPUT);
+
+
+
+
+ 
 
   Serial.begin (9600); // Monitor serial
 }
+void loop(){
 
-void loop() {
+
+
+}
+
+void l8oop() {
   s1 = analogRead(sen1);
   s2 = analogRead(sen2);
   
@@ -54,67 +77,7 @@ void loop() {
        digitalWrite(13,HIGH);//ataca
      }else{
        adelante(80); //sigue con tu vida
-       digitalWrite(13,LOW);
      }
-    */
-    
   }
-
-  
-
-
 }
 
-
-  void derecha(int v1){
-  analogWrite(5,v1);
-  digitalWrite(6,LOW);
-  digitalWrite(7,HIGH);
-
-   analogWrite(10,v1);
-  digitalWrite(9,LOW);
-  digitalWrite(8,HIGH);
-  }
-
-
-    void atras(int v1){
-  analogWrite(5,v1);
-  digitalWrite(6,HIGH);
-  digitalWrite(7,LOW);
-
-   analogWrite(10,v1);
-  digitalWrite(9,LOW);
-  digitalWrite(8,HIGH);
-  }
- 
-  void izquierda(int v1){
-  analogWrite(5,v1);
-  digitalWrite(6,HIGH);
-  digitalWrite(7,LOW);
-  analogWrite(10,v1);
-  digitalWrite(9,HIGH);
-  digitalWrite(8,LOW);
-  }
-
-  void adelante(int v1){
-  analogWrite(5,v1);
-  digitalWrite(6,LOW);
-  digitalWrite(7,HIGH);
-
-   analogWrite(10,v1);
-  digitalWrite(9,HIGH);
-  digitalWrite(8,LOW);
-  }
-
-
-  
-  
-  void parar(){
-  analogWrite(5,255);
-  digitalWrite(6,LOW);
-  digitalWrite(7,LOW);
-
-  analogWrite(10,255);
-  digitalWrite(9,LOW);
-  digitalWrite(8,LOW);
-  }
