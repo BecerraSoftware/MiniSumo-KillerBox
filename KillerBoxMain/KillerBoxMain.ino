@@ -46,6 +46,8 @@ S8=>A7
 Variables del sistema del robot
 BLANCO==> Del sensor de piso que tan intennso detecta el blanco para determinar que movimiento
 se efectua
+oh si 
+
 */
 
 //sensores de piso

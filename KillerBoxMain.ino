@@ -1,198 +1,271 @@
-/*****************************************************
- *  Código extendido y estructurado para control de robot minisumo
- *  - Sensores frontales, laterales y de piso
- *  - Motores con control PWM
- *  - Sistema DIP switch para modo de prueba
- *  - Rutinas de evasión y ataque
- *  - Control de velocidad y dirección
 
- BecerraSoftware
- *****************************************************/
+/*
+Código para el robot mini sumo-- KILLERBOX
+Robot capaz de detectar obstáculos y reaccionar de acuerdo a la situación
+con Sensores de piso para detectar el borde de la arena
+y estrategias para empujar al oponente fuera del ring
 
-// ------------------- Definición de pines -------------------
-// Sensores de oponentes
+creado por: Victor Becerra--- github: BecerraSoftware
+*/
 
-#define SENSOR_DERECHA     5
-#define SENSOR_IZQUIERDA   1
-#define SENSOR_FRENTE      2
+/*
+PINES QUE NO ESTAN FUNCANDO
+A4, A6, A7
 
-// Sensores de piso (barrera blanca)
-#define SENSOR_PISO_DERECHA 4
-#define SENSOR_PISO_IZQUIERDA 3
+PINES EN USO
+S1=>A0
+S2=>A1
+S3=>A2
+S4=>A3
+S8=>A7
+*/
+//Cuenta con 3 Sensores al frente para detectar 3 posiciones distintas
+#define delLeft A2
+#define delRigh A5
+#define delForWard A3
 
-// Motores
-#define MOTOR_IZQ_A1 6
-#define MOTOR_IZQ_A2 7
-#define MOTOR_PWM_A  5
+//Cuenta con 2 Sensores a los costados para detectar si esta de lado o una orientacion
+#define sensorRigh 0
+#define sensorLeft 0
 
-#define MOTOR_DER_B1 9
-#define MOTOR_DER_B2 8
-#define MOTOR_PWM_B  10
+//Cuenta con dos sensores de piso que detectan el color blanco para no salir del ring
+#define floorRigh A7
+#define floorLeft A0
 
-// DIP switch
-#define DIP1 11
+//Pines de motores
+#define MPos_Left 9
+#define MNeg_Left 8
+#define PWM_LEFT 10
 
-// LED indicador
-#define LED_ESTADO 13
+#define MPos_Righ 6
+#define MNeg_Righ 7
+#define PWM_RIGH 5
 
-// ------------------- Variables globales -------------------
-int lecturaSensorDerecha = 0;
-int lecturaSensorIzquierda = 0;
-int lecturaSensorFrente = 0;
-int lecturaPisoDerecha = 0;
-int lecturaPisoIzquierda = 0;
 
-int velocidadBase = 120;   // Velocidad nominal
-int velocidadGiro = 150;   // Velocidad para giros
-int umbralSensor = 500;    // Valor de referencia de los sensores
-bool modoAtaque = false;   // Estado de ataque
+/*
+Variables del sistema del robot
+BLANCO==> Del sensor de piso que tan intennso detecta el blanco para determinar que movimiento
+se efectua
+oh si 
 
-// ------------------- Funciones auxiliares -------------------
-void parar() {
-  analogWrite(MOTOR_PWM_A, 0);
-  analogWrite(MOTOR_PWM_B, 0);
-  digitalWrite(MOTOR_IZQ_A1, LOW);
-  digitalWrite(MOTOR_IZQ_A2, LOW);
-  digitalWrite(MOTOR_DER_B1, LOW);
-  digitalWrite(MOTOR_DER_B2, LOW);
-}
+*/
 
-void adelante(int velocidad) {
-  digitalWrite(MOTOR_IZQ_A1, HIGH);
-  digitalWrite(MOTOR_IZQ_A2, LOW);
-  digitalWrite(MOTOR_DER_B1, HIGH);
-  digitalWrite(MOTOR_DER_B2, LOW);
-  analogWrite(MOTOR_PWM_A, velocidad);
-  analogWrite(MOTOR_PWM_B, velocidad);
-}
+//sensores de piso
+#define BLANCO 800;// Si el sensor detecta 100 o menos es blanco
 
-void atras(int velocidad) {
-  digitalWrite(MOTOR_IZQ_A1, LOW);
-  digitalWrite(MOTOR_IZQ_A2, HIGH);
-  digitalWrite(MOTOR_DER_B1, LOW);
-  digitalWrite(MOTOR_DER_B2, HIGH);
-  analogWrite(MOTOR_PWM_A, velocidad);
-  analogWrite(MOTOR_PWM_B, velocidad);
-}
+const int led= 11;
+const int led2=13;
 
-void izquierda(int velocidad) {
-  digitalWrite(MOTOR_IZQ_A1, LOW);
-  digitalWrite(MOTOR_IZQ_A2, HIGH);
-  digitalWrite(MOTOR_DER_B1, HIGH);
-  digitalWrite(MOTOR_DER_B2, LOW);
-  analogWrite(MOTOR_PWM_A, velocidad);
-  analogWrite(MOTOR_PWM_B, velocidad);
-}
 
-void derecha(int velocidad) {
-  digitalWrite(MOTOR_IZQ_A1, HIGH);
-  digitalWrite(MOTOR_IZQ_A2, LOW);
-  digitalWrite(MOTOR_DER_B1, LOW);
-  digitalWrite(MOTOR_DER_B2, HIGH);
-  analogWrite(MOTOR_PWM_A, velocidad);
-  analogWrite(MOTOR_PWM_B, velocidad);
-}
-
-// Rutina de evasión cuando detecta línea blanca
-void rutinaEvasion() {
-  parar();
-  delay(100);
-  atras(velocidadBase);
-  delay(250);
-  derecha(velocidadGiro);
-  delay(500);
-}
-
-// ------------------- Configuración inicial -------------------
 void setup() {
-  // Pines de sensores
-  pinMode(SENSOR_DERECHA, INPUT);
-  pinMode(SENSOR_IZQUIERDA, INPUT);
-  pinMode(SENSOR_FRENTE, INPUT);
-  pinMode(SENSOR_PISO_DERECHA, INPUT);
-  pinMode(SENSOR_PISO_IZQUIERDA, INPUT);
+  //SENSORES
+  pinMode(delForWard,INPUT);
 
-  // Pines de motores
-  pinMode(MOTOR_IZQ_A1, OUTPUT);
-  pinMode(MOTOR_IZQ_A2, OUTPUT);
-  pinMode(MOTOR_PWM_A, OUTPUT);
-  pinMode(MOTOR_DER_B1, OUTPUT);
-  pinMode(MOTOR_DER_B2, OUTPUT);
-  pinMode(MOTOR_PWM_B, OUTPUT);
+ // pinMode(/*AQUI PONER EL PIN A EVALUAR*/,INPUT);
+  pinMode(floorRigh,INPUT);
+  pinMode(floorLeft,INPUT);
+  //MOTORES
+  pinMode(MPos_Righ, OUTPUT);
+  pinMode(MNeg_Righ, OUTPUT);
+  pinMode(PWM_RIGH, OUTPUT);
 
-  // Pines adicionales
-  pinMode(DIP1, INPUT);
-  pinMode(LED_ESTADO, OUTPUT);
+  pinMode(MPos_Left,OUTPUT);
+  pinMode(MNeg_Left,OUTPUT);
+  pinMode(PWM_LEFT,OUTPUT);
 
-  // Comunicación serial
-  Serial.begin(9600);
-  Serial.println("===== Robot Minisumo Iniciado =====");
-  Serial.println("Esperando activación por DIP switch...");
+  //varios se puede borrar
+  pinMode(led,OUTPUT);
+  pinMode(led2,OUTPUT);
+
+  Serial.begin (9600); // Monitor serial
+  delay(2000);
 }
+void loopdev(){
+  unsigned int value1 = analogRead(floorRigh);
+  unsigned int value2 = analogRead(floorLeft);
+  /*
+  Serial.print(value1);
+  Serial.print(" ");     // Imprime un espacio
+  Serial.println(value2); // Imprime value2 y un salto de línea*/
 
-// ------------------- Bucle principal -------------------
-void loop() {
-  // Espera a que el DIP1 esté en HIGH para activar el robot
-  if (digitalRead(DIP1) == HIGH) {
-    digitalWrite(LED_ESTADO, HIGH);
-    loopVuelta();
-  } else {
-    parar();
-    digitalWrite(LED_ESTADO, LOW);
-  }
-}
+  //Aqui si detecta balnco en los sensores de piso
+ 
+    if(DetectaBlanco(floorRigh) && !DetectaBlanco(floorLeft)){
 
-// ------------------- Lógica de movimiento -------------------
-void loopVuelta() {
-  // Leer sensores
-  lecturaSensorDerecha   = analogRead(SENSOR_DERECHA);
-  lecturaSensorIzquierda = analogRead(SENSOR_IZQUIERDA);
-  lecturaSensorFrente    = analogRead(SENSOR_FRENTE);
-  lecturaPisoDerecha     = digitalRead(SENSOR_PISO_DERECHA);
-  lecturaPisoIzquierda   = digitalRead(SENSOR_PISO_IZQUIERDA);
-
-  // Imprimir datos de depuración
-  Serial.print("Der: "); Serial.print(lecturaSensorDerecha);
-  Serial.print(" | Izq: "); Serial.print(lecturaSensorIzquierda);
-  Serial.print(" | Frente: "); Serial.print(lecturaSensorFrente);
-  Serial.print(" | Piso D: "); Serial.print(lecturaPisoDerecha);
-  Serial.print(" | Piso I: "); Serial.println(lecturaPisoIzquierda);
-
-  // Verificación de línea blanca (piso detectado)
-  if (lecturaPisoDerecha == HIGH || lecturaPisoIzquierda == HIGH) {
-    rutinaEvasion();
-  } 
-  // Verificación de detección de oponente
-  else if (lecturaSensorFrente <= umbralSensor || 
-           lecturaSensorDerecha <= umbralSensor || 
-           lecturaSensorIzquierda <= umbralSensor) {
-
-    parar();
-    delay(100);
-
-    // Ataque frontal
-    if (lecturaSensorFrente <= umbralSensor) {
-      modoAtaque = true;
-      adelante(255);
-      digitalWrite(LED_ESTADO, HIGH);
-    } 
-    // Ataque lateral
-    else if (lecturaSensorDerecha <= umbralSensor) {
-      derecha(velocidadGiro);
-      delay(300);
-      adelante(200);
-    } 
-    else if (lecturaSensorIzquierda <= umbralSensor) {
-      izquierda(velocidadGiro);
-      delay(300);
-      adelante(200);
     }
-  } 
-  // Si no detecta nada, avanza de manera exploratoria
-  else {
-    modoAtaque = false;
-    adelante(velocidadBase);
-    digitalWrite(LED_ESTADO, LOW);
-  }
+    if(DetectaBlanco(floorLeft) && !DetectaBlanco(floorRigh)){
+      digitalWrite(led2,HIGH);
+      delay(50);
+      digitalWrite(led2,LOW);
+      Serial.println("Detecto Izquierda");
+      
+    }
+     if(DetectaBlanco(floorLeft) && DetectaBlanco(floorRigh)) {
+       //Atras(200);
+       delay(100);
+       stop();
+       VueltaRigh(200,200);
+      Serial.println("Detecto Los dos");
+      
+     }
+     if(!DetectaBlanco(floorLeft) && !DetectaBlanco(floorRigh)){
+      Avanzar(0,100);
+      Serial.begin("Detecto Nadota");
+    
+     }
+
+     Serial.print(value1);
+     Serial.print("     ");
+     Serial.println(value2);
+
+      
+  delay(10);
+
+}
+void loop(){
+  /*
+  unsigned int value1 = analogRead(floorRigh);
+  unsigned int value2 = analogRead(floorLeft);
+
+  Serial.print(value1);
+  Serial.print(" ");     // Imprime un espacio
+  Serial.println(value2); // Imprime value2 y un salto de línea
+  */
+    if(DetectaBlanco(floorRigh) && DetectaBlanco(floorLeft)){
+      
+     }
+
+    if(DetectaBlanco(floorLeft) && DetectaBlanco(floorRigh)) {
+       Atras(100,2000);
+       delay(100);
+       //VueltaRigh(200,200);
+      Serial.println("Detecto Los dos");
+     }
+
+    if(!DetectaBlanco(floorLeft) && !DetectaBlanco(floorRigh)){
+      Serial.println("Nadota");
+      Avanzar(50,0);
+     }
+    
+  delay(10);
 }
 
+void loopSensoresPiso() {
+
+  if(DetectaBlanco(floorLeft) || DetectaBlanco(floorRigh)) {
+    stop();
+    Serial.println("alto");
+  } else {
+    Avanzar(10, 0);
+    Serial.println("avanzo");
+  }
+  delay(10);
+}
+void loopDetectarObstaculos(){
+  
+  if (DetectarObstaculo(delForWard)) {
+    Avanzar(200, 0);   // Opción 0: avanzar recto
+  }
+  // Si no, si el sensor izquierdo detecta, gira a la derecha (para buscar que el frontal se alinee)
+  else if (DetectarObstaculo(delLeft)) {
+    Avanzar(150, 2);   // Opción 2: giro a la derecha
+  }
+  // Si no, si el sensor derecho detecta, gira a la izquierda
+  else if (DetectarObstaculo(delRigh)) {
+    Avanzar(150, 1);   // Opción 1: giro a la izquierda
+  }
+  // Si ningún sensor detecta, gira en el sitio lentamente (buscando la señal del frontal)
+  else {
+    Avanzar(100, 3);   // Opción 3: giro en el sitio
+  }
+
+  Serial.println(analogRead(floorRigh));
+}
+void Atras(float velocidad,int tiempo){
+  stop();
+  digitalWrite(MPos_Left, LOW);
+  digitalWrite(MNeg_Left, HIGH);
+  analogWrite(PWM_LEFT, velocidad);
+  digitalWrite(MPos_Righ, LOW);
+  digitalWrite(MNeg_Righ, HIGH);
+  analogWrite(PWM_RIGH, velocidad);
+  delay(tiempo);
+}
+
+void EncenderLed(int pin){digitalWrite(pin,HIGH);delay(100);digitalWrite(pin,LOW);}                                 
+bool DetectaBlanco(int pin){return analogRead(pin)<BLANCO;}
+bool DetectarObstaculo(int pin){return digitalRead(pin)==HIGH}
+//tiemoo de giro
+void VueltaRigh(float velocidad,int turnaroundTime){
+  //si detecto uno
+        digitalWrite(MPos_Left, LOW);
+        digitalWrite(MNeg_Left, HIGH);
+        analogWrite(PWM_LEFT, velocidad);
+      
+        digitalWrite(MPos_Righ, HIGH);
+        digitalWrite(MNeg_Righ, LOW);
+        analogWrite(PWM_RIGH, 0);
+        delay(turnaroundTime);
+}
+void stop(){
+  digitalWrite(MPos_Left,LOW);
+  digitalWrite(MNeg_Left,LOW);
+  analogWrite(PWM_LEFT,0);
+
+  digitalWrite(MPos_Righ,LOW);
+  digitalWrite(MPos_Righ,LOW);
+  analogWrite(PWM_RIGH,0);
+}
+void Avanzar(float velocidad, int opcion){
+  /*
+ Función Avanzar:
+   - velocidad: valor PWM (0 a 255)
+   - opcion:
+       0 -> ambos motores hacia adelante (avance)
+       1 -> giro a la izquierda: motor izquierdo en reversa, motor derecho hacia adelante
+       2 -> giro a la derecha: motor izquierdo hacia adelante, motor derecho en reversa
+       3 -> giro en el sitio: motores en direcciones opuestas a velocidad moderada
+  */
+    switch(opcion) {
+      case 0: // Avanzar recto
+        digitalWrite(MPos_Left, HIGH);
+        digitalWrite(MNeg_Left, LOW);
+        analogWrite(PWM_LEFT, velocidad);
+      
+        digitalWrite(MPos_Righ, HIGH);
+        digitalWrite(MNeg_Righ, LOW);
+        analogWrite(PWM_RIGH, velocidad);
+        break;
+      
+      case 1: // Giro a la izquierda
+        digitalWrite(MPos_Left, LOW);
+        digitalWrite(MNeg_Left, HIGH);
+        analogWrite(PWM_LEFT, velocidad);
+      
+        digitalWrite(MPos_Righ, HIGH);
+        digitalWrite(MNeg_Righ, LOW);
+        analogWrite(PWM_RIGH, velocidad);
+        break;
+      
+      case 2: // Giro a la derecha
+        digitalWrite(MPos_Left, HIGH);
+        digitalWrite(MNeg_Left, LOW);
+        analogWrite(PWM_LEFT, velocidad);
+      
+        digitalWrite(MPos_Righ, LOW);
+        digitalWrite(MNeg_Righ, HIGH);
+        analogWrite(PWM_RIGH, velocidad);
+        break;
+      
+      case 3: // Giro en el sitio (por ejemplo, giro a la derecha)
+        digitalWrite(MPos_Left, HIGH);
+        digitalWrite(MNeg_Left, LOW);
+        analogWrite(PWM_LEFT, velocidad);
+      
+        digitalWrite(MPos_Righ, LOW);
+        digitalWrite(MNeg_Righ, HIGH);
+        analogWrite(PWM_RIGH, velocidad);
+        break;
+  }
+  delay(20);  // Pequeño retardo para estabilidad
+}
